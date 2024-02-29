@@ -27,9 +27,7 @@ DB_URL=f"mongodb+srv://{escaped_username}:{escaped_password}@{cluster}/?retryWri
 _open_ai_model = ChatOpenAI(model="gpt-3.5-turbo", temperature=0.5, max_tokens=60)
 _llm = ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo-16k")
 
-db_url = os.environ.get("DB_URL")
-
-mongo_client = MongoClient(db_url)
+mongo_client = MongoClient(DB_URL)
 db = mongo_client['reviews']
 collection = db['amazon_reviews']
 
