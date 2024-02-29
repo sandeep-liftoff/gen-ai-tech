@@ -16,9 +16,6 @@ import urllib.parse
 
 load_dotenv()
 
-_open_ai_model = ChatOpenAI(model="gpt-3.5-turbo", temperature=0.5, max_tokens=60)
-_llm = ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo-16k")
-
 username = st.secrets['MONGODB_USERNAME']
 password = st.secrets['MONGODB_PASSWORD']
 cluster = st.secrets['CLUSTER']
@@ -27,7 +24,12 @@ escaped_username = urllib.parse.quote_plus(username)
 escaped_password = urllib.parse.quote_plus(password)
 DB_URL=f"mongodb+srv://{escaped_username}:{escaped_password}@{cluster}/?retryWrites=true&w=majority&appName=Cluster0"
 
-mongo_client = MongoClient(DB_URL)
+_open_ai_model = ChatOpenAI(model="gpt-3.5-turbo", temperature=0.5, max_tokens=60)
+_llm = ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo-16k")
+
+db_url = os.environ.get("DB_URL")
+
+mongo_client = MongoClient(db_url)
 db = mongo_client['reviews']
 collection = db['amazon_reviews']
 
@@ -52,7 +54,8 @@ def preprocess_data(data_rows):
     for row in data_rows:
         product = row['Product Name']
         scores = row['label_scores']
-        for key, value in scores:
+        for item in scores:
+            key, value = item['label'], item['score']
             rows.append([product, key, value])
 
     new_df = pd.DataFrame(rows, columns=['Product Name', 'Label', 'Score'])
@@ -201,6 +204,7 @@ if uploaded_file is not None:
                     result = collection.aggregate(query)
                     st.subheader("Result from MongoDB:")
                     for doc in result:
+                        doc['_id'] = str(doc['_id'])
                         st.write(doc)
                     break  # Exit the loop if successful
                 except json.JSONDecodeError as e:
