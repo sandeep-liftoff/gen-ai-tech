@@ -12,12 +12,20 @@ from dotenv import load_dotenv
 from openai_helper import score_reviews, generate_summary_input, get_summary_from_openai, get_attributes, get_aggregation_query_from_openai
 import math
 import json
+import urllib.parse
+
 load_dotenv()
 
 _open_ai_model = ChatOpenAI(model="gpt-3.5-turbo", temperature=0.5, max_tokens=60)
 _llm = ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo-16k")
 
+username = os.environ.get('MONGODB_USERNAME')
+password = os.environ.get('MONGODB_PASSWORD')
+cluster = os.environ.get('CLUSTER')
 
+escaped_username = urllib.parse.quote_plus(username)
+escaped_password = urllib.parse.quote_plus(password)
+DB_URL=f"mongodb+srv://{escaped_username}:{escaped_password}@{cluster}/?retryWrites=true&w=majority&appName=Cluster0"
 db_url = os.environ.get("DB_URL")
 mongo_client = MongoClient(db_url)
 db = mongo_client['reviews']
