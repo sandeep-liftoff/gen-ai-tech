@@ -6,3 +6,5 @@ langchain
 langchain_core
 langchain_openai
 matplotlib
+pymongo
+python-dotenv
