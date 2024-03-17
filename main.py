@@ -16,7 +16,7 @@ load_dotenv()
 username = st.secrets['MONGODB_USERNAME']
 password = st.secrets['MONGODB_PASSWORD']
 cluster = st.secrets['CLUSTER']
-ENV = st.secrets['ENV']
+ENV = st.secrets('ENV', None)
 MODEL = st.secrets.get('MODEL', None)
 escaped_username = urllib.parse.quote_plus(username)
 escaped_password = urllib.parse.quote_plus(password)
@@ -27,7 +27,20 @@ else:
     DB_URL="mongodb://localhost:27017"
     model = MODEL or "gpt-3.5-turbo"
 
+ss['model_name'] = model
 
+st.set_page_config(initial_sidebar_state="collapsed")
+
+st.markdown(
+    """
+<style>
+    [data-testid="collapsedControl"] {
+        display: none
+    }
+</style>
+""",
+    unsafe_allow_html=True,
+)
 mongo_client = MongoClient(DB_URL)
 db = mongo_client['reviews']
 
