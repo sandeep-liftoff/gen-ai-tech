@@ -1,0 +1,12 @@
+.env
+.venv
+__local__
+.DS_Store
+*.pdf
+*.csv
+*.xlsx
+**.toml
+*.pyc
+*.pyo
+**/__pycache__
+.streamlit
