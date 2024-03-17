@@ -16,7 +16,7 @@ load_dotenv()
 username = st.secrets['MONGODB_USERNAME']
 password = st.secrets['MONGODB_PASSWORD']
 cluster = st.secrets['CLUSTER']
-ENV = st.secrets('ENV', None)
+ENV = st.secrets.get('ENV', None)
 MODEL = st.secrets.get('MODEL', None)
 escaped_username = urllib.parse.quote_plus(username)
 escaped_password = urllib.parse.quote_plus(password)
