@@ -17,15 +17,15 @@ username = st.secrets['MONGODB_USERNAME']
 password = st.secrets['MONGODB_PASSWORD']
 cluster = st.secrets['CLUSTER']
 ENV = st.secrets['ENV']
+MODEL = st.secrets['MODEL']
 escaped_username = urllib.parse.quote_plus(username)
 escaped_password = urllib.parse.quote_plus(password)
-model = "gpt-3.5-turbo"
-if ENV == "dev":
-    DB_URL="mongodb://localhost:27017"
-    model = "gpt-3.5-turbo"
-else:
+if ENV == "prod":   
     DB_URL=f"mongodb+srv://{escaped_username}:{escaped_password}@{cluster}/?retryWrites=true&w=majority&appName=Cluster0"
-    model = "gpt-4-turbo-preview"
+    model = MODEL or "gpt-4-turbo-preview"
+else:
+    DB_URL="mongodb://localhost:27017"
+    model = MODEL or "gpt-3.5-turbo"
 
 
 mongo_client = MongoClient(DB_URL)
@@ -63,6 +63,9 @@ collection = ss['collection']
 if data_file_id:
     ss["data_file_id"] = data_file_id
     data_rows = collection.find_one({"data_file_id" : data_file_id})
+    if not data_rows:
+        st.toast(f"No Data found for data_file_id: {data_file_id}")
+        data_rows = []
 
 data_exists = len(data_rows) > 0
 

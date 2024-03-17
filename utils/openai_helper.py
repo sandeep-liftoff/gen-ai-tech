@@ -15,6 +15,8 @@ from tenacity import (
     wait_fixed,
     wait_random
 )
+from streamlit import session_state as ss
+
 import re
 from collections import Counter
 
@@ -41,7 +43,8 @@ def run_attribute_extraction_with_backoff(chain, **kwargs):
     return chain.batch(**kwargs)
 
 @st.cache_data( show_spinner=False)
-def score_reviews(reviews_df, _open_ai_model, attributes):
+def score_reviews(reviews_df, attributes):
+    model_name = ss['model_name']
     op_structure = "feature:score"
     prompt = ChatPromptTemplate.from_template(
                             """
@@ -53,7 +56,7 @@ def score_reviews(reviews_df, _open_ai_model, attributes):
                             """ % (', '.join(attributes), op_structure)
                         )
     
-    model = ChatOpenAI(model="gpt-3.5-turbo", temperature=0.5, max_tokens=45)
+    model = ChatOpenAI(model=model_name, temperature=0.5, max_tokens=45)
 
     chain = (
             {"review": RunnablePassthrough()} 
@@ -75,7 +78,8 @@ def filter_special_characters(attribute):
     return re.sub(r'[^a-zA-Z\s]', '', attribute).strip()
 
 @st.cache_data( show_spinner=False)
-def get_attributes(reviews_df, _open_ai_model):
+def get_attributes(reviews_df):
+    model_name = ss['model_name']
     # pick only 500 reviews per asin
     reviews_df = reviews_df.groupby('asin').head(500)
     prompt = ChatPromptTemplate.from_template(
@@ -103,7 +107,7 @@ def get_attributes(reviews_df, _open_ai_model):
         """
     )
     output_parser = StrOutputParser()
-    model = ChatOpenAI(model="gpt-3.5-turbo", temperature=0, max_tokens=45, top_p=1)
+    model = ChatOpenAI(model=model_name, temperature=0, max_tokens=45, top_p=1)
 
     chain = (
             {"review": RunnablePassthrough()}
@@ -154,8 +158,9 @@ def get_summary_from_openai(data, _llm):
     return result['output_text']
 
 def generate_summary_for_json_ouput(llm, data):
+    model_name = ss['model_name']
     response = llm.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model=model_name,
         messages=[
         {
             "role": "system",
@@ -175,8 +180,9 @@ def generate_summary_for_json_ouput(llm, data):
 
 def get_aggregation_query_from_openai(llm, query, single_row_data):
   # print(single_row_data)
+  model_name = ss['model_name']
   response = llm.chat.completions.create(
-    model="gpt-3.5-turbo",
+    model=model_name,
     messages=[
       {
         "role": "system",
