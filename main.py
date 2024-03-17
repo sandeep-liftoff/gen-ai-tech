@@ -16,19 +16,19 @@ load_dotenv()
 username = st.secrets['MONGODB_USERNAME']
 password = st.secrets['MONGODB_PASSWORD']
 cluster = st.secrets['CLUSTER']
-ENV = st.secrets.get('ENV', None)
+ENV = st.secrets['ENV']
 MODEL = st.secrets.get('MODEL', None)
 escaped_username = urllib.parse.quote_plus(username)
 escaped_password = urllib.parse.quote_plus(password)
+model = None
 if ENV == "prod":   
     DB_URL=f"mongodb+srv://{escaped_username}:{escaped_password}@{cluster}/?retryWrites=true&w=majority&appName=Cluster0"
     model = MODEL or "gpt-4-turbo-preview"
 else:
     DB_URL="mongodb://localhost:27017"
     model = MODEL or "gpt-3.5-turbo"
-
+    
 ss['model_name'] = model
-
 st.set_page_config(initial_sidebar_state="collapsed")
 
 st.markdown(
@@ -41,6 +41,7 @@ st.markdown(
 """,
     unsafe_allow_html=True,
 )
+
 mongo_client = MongoClient(DB_URL)
 db = mongo_client['reviews']
 
@@ -103,14 +104,14 @@ if uploaded_file:
                 
     input_df = pd.read_csv(uploaded_file)
     
-    # ss["attributes"] = attributes = get_attributes(input_df, _open_ai_model)
+    # ss["attributes"] = attributes = get_attributes(input_df)
     
     # print(f"Attributes generated: {attributes}")    
 
     # To run classification need to un comment this 
 
     with st.spinner('Generating Classification Labels, please wait...'):
-        scores_generated_df = score_reviews(input_df, _open_ai_model, attributes)
+        scores_generated_df = score_reviews(input_df, attributes)
         
     # scores_generated_df.to_csv('scores_generated_new.csv', index=False)
     

@@ -4,14 +4,24 @@ from utils.helper import preprocess_data, make_radar_chart, get_app_base_url
 from utils.openai_helper import generate_summary_input, get_summary_from_openai, get_aggregation_query_from_openai, generate_summary_for_json_ouput
 import json
 
-fixed_questions =[
+fixed_questions = [
 "What are the different products that are available",
 "What is the summary of sony product",
 "What is the best product for sound quality."
 ]
 # Set page layout
-st.set_page_config(layout="wide")
+st.set_page_config(layout="wide", initial_sidebar_state="collapsed")
 
+st.markdown(
+    """
+<style>
+    [data-testid="collapsedControl"] {
+        display: none
+    }
+</style>
+""",
+    unsafe_allow_html=True,
+)
 data_exists = ss.get('data_exists', None)
 collection = ss.get('collection', None)
 _open_ai_model = ss.get('open_ai_model', None)
@@ -48,7 +58,6 @@ df = filtered_df
 product_list = df['Product Name'].unique()
 with col2:
     st.write(f"**Data File ID: {data_file_id}**")
-
     selected_product = st.selectbox('**Select a product:**', [f'{product}' for product in product_list])
     
     filtered_data = df[df['Product Name'] == selected_product]
@@ -80,30 +89,32 @@ with col1:
     user_query = st.text_input("**Enter Query:**", value=user_query)
 
     print(f"User Query: {user_query}")
+    
     if st.button("Submit") or question_clicked and user_query:  
-        
-        max_attempts = 3
-        attempts = 0
-        while attempts < max_attempts:
-            attempts += 1
-            query = get_aggregation_query_from_openai(_openai_client, user_query, single_row_json)
-            print(f"Query from OpenAI: {query}")
-            try:
-                query = json.loads(query)
-                
-                # Attempt to fetch data from MongoDB
-                rows = collection.aggregate(query)
-                st.subheader("**Result from MongoDB:**")
-                
-                results = []
-                for doc in rows:
-                    doc['_id'] = str(doc.get('_id', ''))
-                    results.append(doc)
-                print(f"Results: {results}")
-                sum = generate_summary_for_json_ouput(_openai_client, results)  
-                st.write(sum)
-                break  # Exit the loop if successful
-            except json.JSONDecodeError as e:
-                print(f"Error decoding JSON: {e}")
+        with st.spinner('Getting data, please wait...'):
+            
+            max_attempts = 3
+            attempts = 0
+            while attempts < max_attempts:
+                attempts += 1
+                query = get_aggregation_query_from_openai(_openai_client, user_query, single_row_json)
+                print(f"Query from OpenAI: {query}")
+                try:
+                    query = json.loads(query)
+                    
+                    # Attempt to fetch data from MongoDB
+                    rows = collection.aggregate(query)
+                    st.subheader("**Result from MongoDB:**")
+                    
+                    results = []
+                    for doc in rows:
+                        doc['_id'] = str(doc.get('_id', ''))
+                        results.append(doc)
+                    print(f"Results: {results}")
+                    sum = generate_summary_for_json_ouput(_openai_client, results)  
+                    st.write(sum)
+                    break  # Exit the loop if successful
+                except json.JSONDecodeError as e:
+                    print(f"Error decoding JSON: {e}")
     
 
