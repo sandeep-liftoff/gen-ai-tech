@@ -47,6 +47,8 @@ collection = ss["collection"]
 df = filtered_df
 product_list = df['Product Name'].unique()
 with col2:
+    st.write(f"**Data File ID: {data_file_id}**")
+
     selected_product = st.selectbox('**Select a product:**', [f'{product}' for product in product_list])
     
     filtered_data = df[df['Product Name'] == selected_product]
