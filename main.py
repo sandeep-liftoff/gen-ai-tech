@@ -6,7 +6,7 @@ from openai import OpenAI
 from streamlit import session_state as ss
 import urllib.parse
 from utils.helper import get_app_base_url, dump_data_to_db
-from utils.openai_helper import score_reviews
+from utils.openai_helper import score_reviews, get_attributes
 import pandas as pd
 import time
 
@@ -16,7 +16,7 @@ load_dotenv()
 username = st.secrets['MONGODB_USERNAME']
 password = st.secrets['MONGODB_PASSWORD']
 cluster = st.secrets['CLUSTER']
-ENV = st.secrets['ENV']
+ENV = st.secrets.get('ENV',None)
 MODEL = st.secrets.get('MODEL', None)
 escaped_username = urllib.parse.quote_plus(username)
 escaped_password = urllib.parse.quote_plus(password)
@@ -67,10 +67,9 @@ data_file_id = query_params.get('data_file_id', None)
 
 if not data_file_id:
     uploaded_file = st.file_uploader("Choose a Classifed labels CSV file", type="csv")
-
     st.write("Or u can enter data file id, if data is already classified.")
-
     data_file_id = st.text_input("**Enter Data File Id:**", "")
+
                             
 data_rows = []
 collection = ss['collection']
@@ -81,11 +80,9 @@ if data_file_id:
         st.toast(f"No Data found for data_file_id: {data_file_id}")
         data_rows = []
 
-data_exists = len(data_rows) > 0
 
+ss["data_exists"] = data_exists = len(data_rows) > 0
 ss["attributes"] = ["Build Quality", "Price", "Comfort", "Design", "Battery life", "Sound Quality"]
-    
-ss["data_exists"] = data_exists
 
 if 'uploaded_file' not in ss:
     ss['uploaded_file'] = None
@@ -98,7 +95,7 @@ elif data_file_id and not data_exists:
 
 if uploaded_file:
         
-    attributes = ss["attributes"]       
+    # attributes = ss["attributes"]       
     app_base_url = get_app_base_url()
     data_file_id = int(time.time())
                 
@@ -110,13 +107,13 @@ if uploaded_file:
 
     # To run classification need to un comment this 
 
-    with st.spinner('Generating Classification Labels, please wait...'):
-        scores_generated_df = score_reviews(input_df, attributes)
+    # with st.spinner('Generating Classification Labels, please wait...'):
+    #     scores_generated_df = score_reviews(input_df, attributes)
         
     # scores_generated_df.to_csv('scores_generated_new.csv', index=False)
     
     # This can be commented out to run classification
-    # scores_generated_df = input_df  # = pd.read_csv('scores_generated.csv')
+    scores_generated_df = input_df  # = pd.read_csv('scores_generated.csv')
     
     data_rows = dump_data_to_db(scores_generated_df, data_file_id)
     

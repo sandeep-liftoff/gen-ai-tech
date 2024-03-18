@@ -6,7 +6,6 @@ import json
 
 fixed_questions = [
 "What are the different products that are available",
-"What is the summary of sony product",
 "What is the best product for sound quality."
 ]
 # Set page layout
@@ -28,10 +27,15 @@ _open_ai_model = ss.get('open_ai_model', None)
 _openai_client = ss.get('openai_client', None)
 
 if not data_exists:
-    st.empty()
+    st.empty()    
     st.switch_page("main.py")    
     
 col1, col2, col3 = st.columns(3)    
+
+with col1:
+    if st.button("Back", "primary"):
+        st.cache_data.clear()
+        st.switch_page("main.py")  
 
 app_base_url = get_app_base_url()
 data_file_id = ss["data_file_id"]
@@ -70,7 +74,7 @@ with col2:
 with col3:
     with st.spinner('Generating summary, please wait...'):
         summary_input = generate_summary_input(filtered_data)
-        all_products_summary[selected_product] = get_summary_from_openai(summary_input, _open_ai_model)       
+        all_products_summary[selected_product] = get_summary_from_openai(_open_ai_model, summary_input, selected_product)       
         
     st.markdown(f"**{selected_product.upper()} Summary:**")         
     st.write(all_products_summary[selected_product])
@@ -116,5 +120,10 @@ with col1:
                     break  # Exit the loop if successful
                 except json.JSONDecodeError as e:
                     print(f"Error decoding JSON: {e}")
+                    
+            if attempts >= max_attempts:
+                st.error("Failed to fetch data from MongoDB")
+                st.write("")
+                st.stop()
     
 

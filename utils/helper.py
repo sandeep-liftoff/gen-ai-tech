@@ -28,6 +28,7 @@ def preprocess_data(_data_rows):
 def dump_data_to_db(df, data_file_id):
     
     collection = ss["collection"]
+    df = df.dropna(subset=['scores'])
     rows = []
     for index, row in df.iterrows():
         scores = row['scores'].split('\n')
@@ -49,9 +50,6 @@ def dump_data_to_db(df, data_file_id):
         row_dict['label_scores'] = label_scores_list
         row_dict['data_file_id'] = str(data_file_id)
         del row_dict['scores']
-        del row_dict['images']
-        del row_dict['variant:']
-        del row_dict['variant:size']
         rows.append(row_dict)
     if rows:
         collection.insert_many(rows)
@@ -88,7 +86,6 @@ def reset_data():
     collection = ss["collection"]
     collection.delete_many({"data_file_id" : data_file_id})            
     ss["data_exists"] = False
-    ss["file_uploaded"] = True
     st.empty()
     st.rerun()
 

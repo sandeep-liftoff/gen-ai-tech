@@ -3,11 +3,16 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
-from langchain.prompts import PromptTemplate
 from langchain.docstore.document import Document
 from langchain.chains.summarize import load_summarize_chain
-from langchain.chains import LLMChain
 from langchain_core.output_parsers import StrOutputParser
+
+
+from langchain.prompts import PromptTemplate
+from langchain.chains import LLMChain
+from langchain.chains.combine_documents.stuff import StuffDocumentsChain
+
+import math
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -68,6 +73,9 @@ def score_reviews(reviews_df, attributes):
     review_texts = [str(text) for text in review_texts]
     # restrict all reviews to 12000 characters
     review_texts = [text[:12000] for text in review_texts]
+    # Token calculate for all review
+    # review_texts
+    
     res = run_classification_with_backoff(chain, inputs = review_texts, config={"max_concurrency":10})
     for i, row in reviews_df.iterrows():
         reviews_df.at[i, 'scores'] = res[i]
@@ -139,22 +147,25 @@ def get_attributes(reviews_df):
 
 def generate_summary_input(filtered_data):
     each_label_text = []
+    # for filtered_data dataframe groupby label and take mean of score for each label get the dataframe
+    filtered_data = filtered_data.groupby('Label')['Score'].mean().reset_index()
     for index, row in filtered_data.iterrows():
-        each_label_text.append(f"- {row['Label']}: {row['Score']}/10\n")
-    
+        each_label_text.append(f"- {row['Label']}: {math.floor(row['Score'])}/10\n")
     return each_label_text
 
 @st.cache_data(ttl= None, show_spinner=False)
-def get_summary_from_openai(data, _llm):
-    prompt_template = """Write a concise summary of the following product reviews for the earbuds:
+def get_summary_from_openai(_llm, data, product):
+    prompt_template = """Write a concise summary for the product %s based on the following data:
                     {text}
-                    CONSCISE SUMMARY:"""
-    prompt = PromptTemplate(template=prompt_template, input_variables=["text"])
-
+                    CONSCISE SUMMARY:"""  % (product)
+    prompt = PromptTemplate.from_template(prompt_template)    
+    llm_chain = LLMChain(llm=_llm, prompt=prompt)
     docs = [Document(page_content=t) for t in data]
-    chain = load_summarize_chain(_llm, chain_type='stuff', prompt=prompt)
+
+    stuff_chain = StuffDocumentsChain(llm_chain=llm_chain, document_variable_name="text")
+
+    result = stuff_chain.invoke(docs)
     
-    result = chain.invoke(docs)
     return result['output_text']
 
 def generate_summary_for_json_ouput(llm, data):
